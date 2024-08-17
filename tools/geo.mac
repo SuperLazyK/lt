@@ -1,0 +1,50 @@
+
+ratprint: false$
+
+declare ("'", alphabetic)$
+grind:true;
+load ("f90")$
+f90_output_line_length_max:10000000$
+
+/* start x0, y0 th0 */
+/* goal x1, y1 th1 */
+/* connect 2 lineseg + 1 arc */
+pax : x0 + la * cos (th0) $
+pay : y0 + la * sin (th0) $
+
+/* assume th1 - th0 > 0 */
+pox : pax + r * cos (th0 + %pi/2) $
+poy : pay + r * sin (th0 + %pi/2) $
+
+pbx : pox + r * cos (th1 - %pi/2) $
+pby : poy + r * sin (th1 - %pi/2) $
+
+/* x1: pbx + lb * cos(th1) */
+/* y1: pby + lb * sin(th1) */
+
+sol: solve(
+    [ x1 = pbx + lb * cos(th1)
+    , y1 = pby + lb * sin(th1)
+    ], [la, lb]) $
+sol_la:rhs(sol[1][1])$
+sol_lb:rhs(sol[1][2])$
+
+symbolilze(M):= subst([ sin(th0)=s0, sin(th1)=s1, cos(th0)=c0, cos(th1)=c1], M)$
+/*
+f90(trigreduce(cos(th0)*sin(th1)-cos(th1)*sin(th0)))$
+sin(th1-th0)
+f90(trigreduce(-sin(th0)*sin(th1)-cos(th1)*cos(th0)+1))$
+1-cos(th1-th0)
+*/
+f90(factor(ratsimp(symbolilze(trigsimp((sol_la))))))$
+f90(factor(ratsimp(symbolilze(trigsimp((sol_lb))))))$
+
+/*
+f90(x1)$
+f90(y1)$
+f90(subst([th0=0, th1=%pi], x1))$
+f90(subst([th0=0, th1=%pi], y1))$
+f90(subst([th0=0, th1=%pi/2], x1))$
+f90(subst([th0=0, th1=%pi/2], y1))$
+*/
+
