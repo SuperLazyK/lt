@@ -1,0 +1,21 @@
+ratprint: false$
+
+declare ("'", alphabetic)$
+grind:true;
+load ("f90")$
+f90_output_line_length_max:10000000$
+
+symbolize(M):= subst([ diff(x,t,1)=dx
+                      , diff(y,t,1)=dy
+                    ], M)$
+depends([x, y] , t)$
+/*given x0 y0 x1 y1 dx dy*/
+circle_eq:(x - cx)^2 + (y - cy)^2 - r^2$
+f90((circle_eq))$
+f90(symbolize(diff(circle_eq, t)))$
+
+eq1:(subst([x=x0, y=y0], circle_eq))$
+eq2:(subst([x=x1, y=y1], circle_eq))$
+eq3:(subst([x=x0, y=y0], symbolize(diff(circle_eq, t))))$
+
+f90(ratsimp(solve([eq1=0, eq2=0, eq3=0], [cx,cy,r])))$
