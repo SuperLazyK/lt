@@ -32,7 +32,7 @@ def arr2txt(a, title=""):
     a2 = a.reshape(-1)
     return " ".join([f"{title}[{i}]: {a2[i]:.03f}" for i in range(a2.shape[0])])
 
-SCREEN_SIZE=(1500, 1200)
+SCREEN_SIZE=(1500, 1000)
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -40,7 +40,6 @@ BLACK = (0, 0, 0)
 def default_event_handler(key, shifted):
     if key == 'q':
         sys.exit()
-
 def s2color(s):
     if s == "white":
         return (255, 255, 255)
@@ -127,17 +126,19 @@ class Viewer():
 
     def draw(self, cmds):
         for cmd in cmds:
+            #w = int(max(self.scale * cmd["width"], 1))
+            w = 1
             if cmd["type"] == "lineseg":
-                pygame.draw.line(self.screen, s2color(cmd.get("color")), self.conv_pos(cmd["start"]), self.conv_pos(cmd["end"]), width=1)
+                pygame.draw.line(self.screen, s2color(cmd.get("color")), self.conv_pos(cmd["start"]), self.conv_pos(cmd["end"]), width=w)
             elif cmd["type"] == "poly":
                 pygame.draw.polygon(self.screen, s2color(cmd.get("color")), [self.conv_pos(p) for p in cmd['points']], width=0)
             elif cmd["type"] == "circle":
-                pygame.draw.circle(self.screen, s2color(cmd.get("color")), self.conv_pos(cmd["origin"]), self.scale * cmd["r"], width=cmd["width"])
+                pygame.draw.circle(self.screen, s2color(cmd.get("color")), self.conv_pos(cmd["origin"]), self.scale * cmd["r"], width=w)
             elif cmd["type"] == "arcseg":
                 c = self.conv_pos(cmd["origin"])
                 r = self.scale * cmd["r"]
                 rect = pygame.Rect(c[0] - r, c[1] - r, 2 * r, 2 * r)
-                pygame.draw.arc(self.screen, s2color(cmd.get("color")), rect, cmd["start"], cmd["end"], width=1)
+                pygame.draw.arc(self.screen, s2color(cmd.get("color")), rect, cmd["start"], cmd["end"], width=w)
 
     def flush(self, Hz):
         if not self.cursor_show:

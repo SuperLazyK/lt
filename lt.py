@@ -95,16 +95,6 @@ class LTModel():
         print("model.dy=", self.dy)
         print("model.dth=", self.dth)
 
-    def draw_model(self, model):
-
-        ret = graphic.draw_eqtri_cmd(np.array((model.x, model.y)), model.r, model.th, color=(122, 122, 255))
-
-        for sen, ob in zip(model.line_sensor, model.line_sensor_val):
-            ret = ret + graphic.draw_circle_cmd(sen, model.lss/2, color=(255, 0, 0) if ob else (122, 200, 40))
-        ret = ret + graphic.draw_circle_cmd(model.corner_sensor, model.lss/2, color=(255, 0, 0) if model.corner_sensor_val else (122, 200, 40))
-        ret = ret + graphic.draw_circle_cmd(model.goal_sensor, model.lss/2, color=(255, 0, 0) if model.goal_sensor_val else (122, 200, 40))
-
-        return ret
 
 
 class LTController():
@@ -229,14 +219,6 @@ class LTController():
             return 0, 0
         else:
             return uv, uw
-
-    def draw_controller(self, controller):
-        ret = []
-        if len(controller.samples) <= 1:
-            return []
-        #ret = ret + graphic.draw_lineseg_cmd(controller.samples[-1], controller.samples[-1] + 500*controller.line_dir, color=(200,100, 100))
-        #ret = ret + graphic.draw_circle_cmd(np.array([model.x, model.y]), 10*controller.r, color=(200,100, 100), width=1)
-        return ret
 
 
 

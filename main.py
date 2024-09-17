@@ -1,12 +1,13 @@
 import course
 import lt
 import graphic
+from draw import draw_course, draw_model, draw_controller
 import sys
 import numpy as np
 
 # simulation
 viewer = graphic.Viewer(scale=500)
-course = course.Course()
+course = course.Course("course.yaml")
 model = lt.LTModel()
 controller = lt.LTController(model)
 
@@ -60,7 +61,7 @@ def event_handler(key, type, args):
         ref_vel_forward = 0
         ref_vel_rotate = 0
 
-dos = draw_course(course)
+
 dt = 0.01
 
 #model.x= 0.45075214000000036
@@ -75,7 +76,7 @@ dt = 0.01
 while True:
     viewer.clear()
     model.observe(course.sample)
-    viewer.draw(dos)
+    viewer.draw(draw_course(course))
     viewer.draw(draw_model(model))
     viewer.draw(draw_controller(controller))
     viewer.handle_event(event_handler)

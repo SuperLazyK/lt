@@ -1,0 +1,17 @@
+
+/*
+robot configuration
+wr # wheel radius
+d  # wheel distance
+r  # offset of sensor line
+*/
+
+/*
+robot: x, y, th
+*/
+
+/*
+sensor_line(x, y, th)
+*/
+
+
