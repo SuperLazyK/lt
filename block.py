@@ -1,33 +1,5 @@
 from math import sin, cos
 import numpy as np
-#-------------------------------------------
-# constant
-#-------------------------------------------
-
-#             C
-#             ^
-#             |
-#             c
-#             |
-#             v
-# WL <--LL--> A <--LR--> WR
-
-M = 0.1 # car mass
-J = 1 # car inertia
-LL = 0.03
-LR = 0.03
-L = (LL + LR)
-c = 0.01
-R = 0.01 # wheel radius
-Rm = 0.1 # motor resistance
-Lm = 0.1 # motor Inductance
-Kt = 0.01
-Kb = 0.01
-ru_IMU = 0.1 # C2imu
-rw_IMU = 0.2
-
-Ku = 1.0 # Gain for u
-Kw = 1.0 # Gain for omega
 
 #-------------------------------------------
 # state
@@ -45,7 +17,7 @@ Kw = 1.0 # Gain for omega
 def plant_car(tauL, tauR, x, y, th, vu, vw, omega, Ddvu, Ddomega, dt):
 
     dvu = (M*R*c*omega**2 + tauL + tauR)/(M*R) + Ddvu
-    ddth = (-LL*tauL + LR*tauR - M*R*c*omega*vu)/(J*R + M*R*c**2) + Ddomega
+    ddth = (-L2*tauL + L2*tauR - M*R*c*omega*vu)/(J*R + M*R*c**2) + Ddomega
     dvw = c * ddth
 
     vx =  vu * cos(th) - vw * sin(th)
@@ -69,8 +41,8 @@ def plant_motor(V, dphi, tau, dt):
 
 
 def kinematics_v_omega2dphi(vu, omega):
-    dphiL = (-LL*omega - LR*omega + 2*vu)/(2*R)
-    dphiR = (LL*omega + LR*omega + 2*vu)/(2*R)
+    dphiL = (-L2*omega - L2*omega + 2*vu)/(2*R)
+    dphiR = (L2*omega + L2*omega + 2*vu)/(2*R)
     return dphiL, dphiR
 
 # round noise
@@ -109,8 +81,8 @@ def nonlinear_term_compensator(vu, omega, dvu, ddth):
     d2 = c * vu * omega
     dd1 = 2 * c * omega * ddth
     dd2 = c * (dvu * omega + vu * ddth)
-    VLc = LR*M*R*(-Lm*dd1 - Rm * d1)/(Kt*(LL + LR)) + (-M*R*(Lm*dd2 + Rm*d2)/(Kt*(LL + LR)))
-    VRc = LL*M*R*(-Lm*dd1 - Rm * d1)/ (Kt*(LL + LR)) * d1 + M*R*(Lm*dd2 + Rm*d2)/(Kt*(LL + LR))
+    VLc = L2*M*R*(-Lm*dd1 - Rm * d1)/(Kt*(L)) + (-M*R*(Lm*dd2 + Rm*d2)/(Kt*(L)))
+    VRc = L2*M*R*(-Lm*dd1 - Rm * d1)/ (Kt*(L)) * d1 + M*R*(Lm*dd2 + Rm*d2)/(Kt*(L))
     return VLc, VRc
 
 
