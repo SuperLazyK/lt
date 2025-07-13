@@ -151,7 +151,7 @@ plant_ss = Matrix([sol[ddth], sol[dvu], sol[dtauL], sol[dtauR]])
 
 def f_plant_ss(params=constant):
     expr = plant_ss.subs(params)
-    f = lambdify([vu, dth, tauL, tauR], expr)
+    f = lambdify([vu, dth, tauL, tauR, VL, VR], expr)
     return f
 
 
@@ -174,6 +174,8 @@ A = simplify(plant_ss_dist.jacobian(Matrix([vu, dth, tauL, tauR])))
 B = simplify(plant_ss_dist.jacobian(Matrix([VL, VR])))
 Wss = simplify(plant_ss_dist.jacobian(Matrix([d1, d2])))
 C = Matrix([[1, 0, 0, 0], [0, 1, 0, 0]])
+C_ext = C * A
+D_ext = C * B
 
 def f_plant_ss_dist(params=constant):
     return sp2np(A.subs(params)),sp2np(B.subs(params)),sp2np(C.subs(params)),sp2np(Wss.subs(params))
@@ -184,7 +186,33 @@ def f_plant_ss_dist(params=constant):
 #-----------------------
 
 # note that P has 1/s. s * PlantTF is 1st order lag
-# Y = C (sI - A)^-1 (B U + Wss D)
+# sX = AX + BU + Wss D
+# X = (sI -A)^-1 (BU + Wss D)
+# Y = C (AX + BU + Wss D)
+#   = C (A (sI -A)^-1 (BU + Wss D) + BU + Wss D)
+#   = C A (sI -A)^-1 B U + C A (sI -A)^-1 Wss D + C B U  + C Wss D
+#   = (C A (sI -A)^-1 B  + C B) U + (C A (sI -A)^-1 Wss  + C Wss) D
+#   = (C (A (sI -A)^-1 + I) B) U + (C (A (sI -A)^-1 + I) Wss) D
+#   = (C (A + sI - A) (sI - A)^-1 B) U + (C (A  + sI - A) (sI-A)^-1 Wss) D
+#   = s (C (sI - A)^-1 B) U + s (C (sI -A)^-1 Wss) D
+
+# cancel D with dU
+# s (C (sI - A)^-1 B) (U + dU) + s (C (sI -A)^-1 Wss) D
+# s (C (sI - A)^-1 B) dU + s (C (sI -A)^-1 Wss) D = 0
+# dU = - (C (sI - A)^-1 B) ^-1 (C (sI -A)^-1 Wss) D
+
+# Velocity Control loops
+#
+#        +--------------+----------------+
+#        |              |                |
+#        |              v                |
+#        |        +-- Comp <-+           |
+#        |        |          |           |
+#      - v      - v          |           |
+#  ref ----> K --------> P --+-> 1/s ----+---->
+#
+
+
 # P = C (sI - A)^-1 B
 # W = C (sI - A)^-1 Wss
 P = C * (s* eye(4) - A).inv() * B
@@ -239,6 +267,7 @@ def f_pd_controller_tf(params=constant):
 #-----------------------------------
 
 def sptfM2ctss(M):
+    import control as ct
     nums = []
     dens = []
     for i in range(shape(M)[0]):
@@ -253,8 +282,7 @@ def sptfM2ctss(M):
     return ct.tf2ss(nums, dens)
 
 
-
-if __name__ == "__main__":
+def test_linear_model():
     import matplotlib.pyplot as plt
     import control as ct
     mP,mWss = f_plant_tf_dist()
@@ -264,10 +292,7 @@ if __name__ == "__main__":
     L = ct.series(ssK, ssP) # same as sptfM2ctss(simplify(mP * mK))
     # MIMO tf feedback is not implemented
     Lc = ct.feedback(L, np.eye(2))
-    print(Lc.noutputs)
-    print(Lc.ninputs)
     t, y = ct.step_response(Lc)
-    print(y.shape)
     i = 1
     j = 1
     plt.plot(t, y[i][j], label=f"Output {i}{j}")
@@ -278,7 +303,50 @@ if __name__ == "__main__":
     plt.grid(True)
     plt.show()
 
+def test_nonlinear_model():
+    import matplotlib.pyplot as plt
+    import control as ct
 
+    f = f_plant_ss()
 
+    def update(t, x, u, params):
+        return np.array(f(*x, *u))
 
+    def output(t, x, u, params):
+        #return np.array(f(*x, *u)[0:2])
+        return np.array([x[0], x[1]])
+
+    # System dynamics
+    ssP = ct.nlsys(
+        update, output, name='plant', params={},
+        states=['vu', 'omega', 'tauL', 'tauR'],
+        outputs=['vu', 'omega'],
+        inputs=['VL', 'VR'])
+
+    integrator = ct.tf2ss(1, [1,1])
+
+    mK = f_pd_controller_tf()
+    ssK = sptfM2ctss(mK)
+    L = ct.series(ssK, ssP) # same as sptfM2ctss(simplify(mP * mK))
+
+    Lc = ct.feedback(L, np.eye(2))
+
+    T = np.linspace(0, 0.3, 1000)
+    U = np.ones((2, 1000))
+    X0 = [0, 0, 0, 0]
+
+    # 応答計算
+    T, y = ct.input_output_response(Lc, T, U, X0)
+
+    plt.plot(T, y[0], label=f"Output {0}")
+
+    plt.xlabel("Time [s]")
+    plt.ylabel("Output")
+    plt.title("Step Response")
+    plt.grid(True)
+    plt.show()
+
+if __name__ == "__main__":
+    #test_linear_model()
+    test_nonlinear_model()
 
